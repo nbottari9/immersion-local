@@ -1,7 +1,11 @@
+import boto3.exceptions
+import botocore.exceptions
 from discord.ext import commands
 from discord import app_commands
 import discord
 from discord import ui
+import boto3
+import botocore
 
 class Event():
     def __init__(self, name, date, time, image_url):
@@ -97,6 +101,30 @@ class SearchCog(commands.GroupCog, name="search", description="Search for clubs 
     async def get_clubs(self) -> list[Club]:
         clubs = []
         #this is where we would actually fetch clubs from ddb
+        ddb = boto3.resource('dynamodb')
+        cf = boto3.client('cloudformation')
+
+        resource = None
+        table = None
+        items = None
+
+        try:
+            resource = cf.describe_stack_resource(StackName="ImmersionStack", LogicalResourceId="ImmersionOrganizationTable")
+        except botocore.exceptions.ClientError as e:
+            print("ERROR! SearchCog::get_clubs():", e)
+        else:
+            try:
+                table = ddb.Table(resource.StackResourceDetail.PhysicalResourceId)
+            except Exception as e:
+                print("ERROR! SearchCog::get_clubs() raised an Exception:", e)
+            else:
+                items = table.scan()
+        print("Stack resources:", items)
+
+
+
+
+        
         for i in range(5):
             clubs.append(Club(name="Cloud Computing Club", image_url="https://se-images.campuslabs.com/clink/images/3f63b266-ed37-4070-8678-6aae47084b5008aa61af-5d5d-499e-8c9e-7ed5ce127541.jpeg?preset=med-sq"))
         return clubs
